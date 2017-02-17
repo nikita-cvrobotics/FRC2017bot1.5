@@ -6,6 +6,7 @@
 class RobotMecanum {
 
 public:
+	RobotMecanum();
 	const int BASIC_DRIVE = 0;
 	const int ADVANCED_DRIVE = 1;
 	double sensitivity = 0.25;
@@ -13,7 +14,7 @@ public:
 	void DriveCartesian(double x, double y, double rotation);
 	void setDriveAngle();
 	void setDriveSystem(int new_drive);
-	void Initialize();
+	//void Initialize();
 protected:
 	//For alignment when robot moves straight and stands still. Between 0 and 1. Be reasonable.
 	double lock_sensitivity = 0.75;

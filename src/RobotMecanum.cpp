@@ -4,7 +4,7 @@
 
 #define PI 3.14159265
 
-void RobotMecanum::Initialize() {
+RobotMecanum::RobotMecanum() {
 	_motor_FL = std::make_shared<Spark>(0);
 	_motor_FR = std::make_shared<Spark>(1);
 	_motor_BL = std::make_shared<TalonSRX>(3);
