@@ -18,7 +18,8 @@ class Robot: public frc::IterativeRobot {
 	std::shared_ptr<Claw> _claw;
 	std::shared_ptr<RoboRealm> _track;
 	std::shared_ptr<AutoRoute> _auto_route;
-	XboxController *_joystick;
+	XboxController *_advanced_ctrl;
+	XboxController *_precise_ctrl;
 	Compressor *_compressor;
 	bool lastResetGyro = false;
 	Relay *_relay;
@@ -44,12 +45,13 @@ public:
 		_robot_drive = std::make_shared<RobotMecanum>();
 		_claw = std::make_shared<Claw>();
 		_track = std::make_shared<RoboRealm>();
-		_joystick = new XboxController(0);
+		_advanced_ctrl = new XboxController(0);
+		_precise_ctrl = new XboxController(1);
 		_relay = new Relay(0, Relay::kForwardOnly);
 		_winch = new TalonSRX(4);
 		_hopper = new Talon(5);
-		_bottom_limit = new DigitalInput(0);
-		_top_limit = new DigitalInput(2);
+		//_bottom_limit = new DigitalInput(0);
+		//_top_limit = new DigitalInput(2);
 		_compressor = new Compressor();
 		//_claw = new DoubleSolenoid(0,1);
 		//_lift = new DoubleSolenoid(2,3);
@@ -136,22 +138,36 @@ public:
 		SmartDashboard::PutNumber("current_angle",_robot_drive->current_angle);
 		SmartDashboard::PutNumber("lock_angle",_robot_drive->lock_angle);
 		//_avg_angle_acc = _robot_drive->current_angle;
-		bool currResetGyro = _joystick->GetRawButton(7);
+		bool currResetGyro = _advanced_ctrl->GetRawButton(7);
 		if (currResetGyro && !lastResetGyro) {
 			_robot_drive->setDriveAngle();
 		}
 		lastResetGyro = currResetGyro;
 		SmartDashboard::PutNumber("lastResetGyro", lastResetGyro);
-		_robot_drive->boostSpeed(_joystick->GetRawAxis(3) > 0.5);
-		double drX = _joystick->GetRawAxis(0);
-		double drY = -_joystick->GetRawAxis(1);
-		double drR = _joystick->GetRawAxis(4);
-		_robot_drive->DriveCartesian(drX, drY, drR);
+
+		//advanced controller inputs
+		double drXa = _advanced_ctrl->GetRawAxis(0);
+		double drYa = -_advanced_ctrl->GetRawAxis(1);
+		double drRa = _advanced_ctrl->GetRawAxis(4);
+		//precise controller inputs
+		double drXp = _precise_ctrl->GetRawAxis(0);
+		double drYp = _precise_ctrl->GetRawAxis(1);
+		double drRp = _precise_ctrl->GetRawAxis(4);
+		if ((abs(drXp) + abs(drYp) + abs(drRp)) > (abs(drXa) + abs(drYa) + abs(drRa))){
+			_robot_drive->setDriveAngle();
+			_robot_drive->boostSpeed(_precise_ctrl->GetRawAxis(3) > 0.5);
+			_robot_drive->setDriveSystem(_robot_drive->BASIC_DRIVE);
+			_robot_drive->DriveCartesian(drXp, -drYp, drRp);
+		} else {
+			_robot_drive->boostSpeed(_advanced_ctrl->GetRawAxis(3) > 0.5);
+			_robot_drive->setDriveSystem(_robot_drive->ADVANCED_DRIVE);
+			_robot_drive->DriveCartesian(drXa, drYa, drRa);
+		}
 		//bool pull_up = _joystick->GetRawButton(5);
 		//bool pull_up = _joystick->GetRawButton(5);
 		//_winch->Set(pull_up - _joystick->GetRawButton(6));
-		bool pull_up = _joystick->GetRawButton(6);
-		bool rope_lock = _joystick->GetRawButton(5);
+		bool pull_up = _advanced_ctrl->GetRawButton(6);
+		bool rope_lock = _advanced_ctrl->GetRawButton(5);
 		if (pull_up){
 			_winch->Set(1);
 		} else if (rope_lock) {
@@ -163,37 +179,36 @@ public:
 		if (pull_up) {
 			_robot_drive->resetTurnLock();
 		}
-		SmartDashboard::PutNumber("drX",drX);
 
-		if (_joystick->GetRawButton(1)) {
+		if (_precise_ctrl->GetAButton()) {
 			//A button is pressed
 			_claw->lowerArm();
 		}
-		if (_joystick->GetRawButton(2)) {
+		if (_precise_ctrl->GetBButton()) {
 			//B button is pressed
 			_claw->openClaw();
 		}
-		if (_joystick->GetRawButton(3)) {
+		if (_precise_ctrl->GetXButton()) {
 			//X button is pressed
 			_claw->closeClaw();
 		}
-		if (_joystick->GetRawButton(4)) {
+		if (_precise_ctrl->GetYButton()) {
 			//Y button is pressed
 			_claw->raiseArm();
 		}
-		bool hopperUp = false;
+		/*bool hopperUp = false;
 		bool hopperDown = false;
-		SmartDashboard::PutNumber("POV Joystick", _joystick->GetPOV());
-		int povAngle = _joystick->GetPOV();
+		SmartDashboard::PutNumber("POV Joystick", _advanced_ctrl->GetPOV());
+		int povAngle = _advanced_ctrl->GetPOV();
 		hopperUp = ( (povAngle > 270) || (povAngle >= 0 && povAngle < 90) ) && !_top_limit->Get();
 		hopperDown = ( (povAngle > 90 && povAngle < 270) ) && !_bottom_limit->Get();
-		//SmartDashboard::PutBoolean("hopper_up", _top_limit->Get());
-		//SmartDashboard::PutBoolean("hopper_down", _bottom_limit->Get());
+		SmartDashboard::PutBoolean("hopper_up", _top_limit->Get());
+		SmartDashboard::PutBoolean("hopper_down", _bottom_limit->Get());
 		_hopper->Set(hopperUp - hopperDown);
-		//hopperUp = povAngle == 1
-		//_claw->checkLimits();
+		hopperUp = povAngle == 1
+		//_claw->checkLimits();*/
 		cog_x = SmartDashboard::GetNumber("COG_X", 0.0);
-		_align = _joystick->GetRawButton(8);
+		_align = _precise_ctrl->GetRawButton(8);
 		if (_align && cog_x!=0){
 			//offset = (615 - cog_x) / 100 * 0.75;
 			offset = (cog_x - 615*0.5) / 100 * 0.40;

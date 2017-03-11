@@ -14,3 +14,9 @@ double RoboRealm::getXOffset() {
 double RoboRealm::getYOffset() {
 	return COG_Y - center_y;
 }
+double RoboRealm::getXMove() {
+	return RoboRealm::getXOffset() / 100;
+}
+double RoboRealm::getYMove() {
+	return 1.0 - abs(RoboRealm::getXOffset() / 100);
+}

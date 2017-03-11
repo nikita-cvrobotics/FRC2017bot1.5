@@ -14,6 +14,8 @@ public:
 	void searchForTarget();
 	double getXOffset();
 	double getYOffset();
+	double getXMove();
+	double getYMove();
 };
 
 #endif /* SRC_ROBOREALM_H_ */
